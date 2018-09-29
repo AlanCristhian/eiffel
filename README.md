@@ -1,7 +1,7 @@
 # eiffel
 
-Another Python Design By Contract (DbC) implementation. The goal is that allows
-to declare constraints on functions and classes without decorators or lambdas.
+Another Python Design By Contract (DbC) module. The goal is that allows to
+declare constraints on functions and classes without decorators or lambdas.
 
 ## Installation
 
@@ -9,7 +9,7 @@ to declare constraints on functions and classes without decorators or lambdas.
 $ pip install git+https://github.com/AlanCristhian/eiffel.git
 ```
 
-## Defining Functions
+## Functions
 
 To define a function you must create a subclass of `eiffel.Routine` class:
 
@@ -28,10 +28,10 @@ The `do` method is the body of the function. Then you can call it as usual:
 3
 ```
 
-## Specifying Preconditions
+## Preconditions
 
 A **precondition** is a predicate that must be true just prior to the
-execution of the function. For example, in the division the divisor must be
+execution of a function. For example, in the division the divisor must be
 nonzero:
 
 ```python
@@ -56,11 +56,11 @@ AssertionError
 
 The `require` method will have the exact arguments declared in the `do` method.
 
-## Expressing Postconditions
+## Postconditions
 
 A **postcondition** is a predicate that must be true just *after* to the
 execution of the function. For example, the absolute value of a number is
-always greater or equal to zero.
+always positive.
 
 ```python
 class absolute_value(eiffel.Routine):
@@ -75,11 +75,10 @@ Postconditions are defined by the `ensure` method and are checked *after* the
 function is called. This method always get one argument that is the result of
 the function.
 
-## Imposing Invariants
+## Invariants
 
-A **invariant** is a predicate that must be true *after* object initialization
-and and *after* a method is called. For example, the age of a person is always
-positive:
+A **invariant** is a constraint imposed on all *public* methods of the class.
+For example, the age of a person is always positive:
 
 ```python
 class Person(eiffel.Class):
@@ -93,15 +92,40 @@ class Person(eiffel.Class):
         assert self.age >= 0
 ```
 
-To define a class that can check invariants you must create a subclass of
-`eiffel.Class` class, as seen in the above example. Then the constranints
-are defined by the `__invariant__` method. This method does not take arguments.
+To define a class that can check invariants you must create a derived class of
+`eiffel.Class`, as seen in the above example. Then the constranints are defined
+by the `__invariant__` method. This method does not take arguments.
 
 ```
->> Alexandre = Person(age=57)
->> Alexandre.set_age(-10)
+>> python = Person(age=10)
+>> python.set_age(-10)
 Traceback (most recent call last):
   File "<pyshell#0>", line 1, in <module>
     assert self.age >= 0
 AssertionError
+```
+
+The constraints are checked *after* object initialization, and *after* a method
+is called.
+
+## Inheritance
+
+Since both `eiffel.Routine` and `eiffel.Class` are normal python classes, you
+can handle inheritance as usual.
+
+## Undoing changes
+
+If the new object state does not meet the restriction, `eiffel.Class`
+restore the state stored in the object. For example, for the `Person` class,
+the `age` property is restored after fail:
+
+```
+>>> python = Person(age=10)
+>>> python.age = -10
+Traceback (most recent call last):
+  File "<pyshell#0>", line 1, in <module>
+    assert self.age >= 0
+AssertionError
+>>> python.age
+10
 ```
