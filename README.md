@@ -2,6 +2,8 @@
 
 Another Python Design By Contract (DbC) module. The goal is that allows to
 declare constraints on functions and classes without decorators or lambdas.
+Also meets the full DbC especification, except automatic generation of
+documentation.
 
 ## Installation
 
@@ -9,24 +11,68 @@ declare constraints on functions and classes without decorators or lambdas.
 $ pip install git+https://github.com/AlanCristhian/eiffel.git
 ```
 
-## Functions
-
-To define a function you must create a subclass of `eiffel.Routine` class:
+## General syntax
 
 ```python
 import eiffel
 
-class add(eiffel.Routine):
-    def do(x, y):
-        return x + y
+class MyClass(eiffel.Class):
+
+    @eiffel.routine
+    def function(arguments):
+        with eiffel.require:
+            REQUIRE_BLOCK
+        with eiffel.body:
+            BODY_BLOCK
+            result = "any value"
+        with eiffel.ensure as old:
+            ENSURE_BLOCK
+        return result
+
+    def __invariant__(self):
+        INVARIANT_BLOCK
 ```
 
-The `do` method is the body of the function. Then you can call it as usual:
+## Routine
+
+To define a function you must decorate the function with the `eiffel.routine`
+decorator and use the `eiffel.body` context manager:
+
+```python
+import eiffel
+
+@eiffel.routine
+def add(x, y):
+    with eiffel.body:
+        result = x + y
+    return result
+```
+
+You must define the `result` variable and then return it. Then you can call it
+function as usual:
 
 ```
 >>> add(1, 2)
 3
 ```
+
+You must explicity define the value of the result variable, even if your
+function does not return nothing. In that case just assign the `None` constant.
+
+If the `result` object is different than the function output, the function
+will raise a `ValueError`:
+
+```python
+@eiffel.routine
+def function():
+    with eiffel.body:
+        result = 1
+    return 2
+```
+
+You must always decorate the function with `eiffel.routine` first.
+
+TODO
 
 ## Preconditions
 
@@ -35,16 +81,18 @@ execution of a function. For example, in the division the divisor must be
 nonzero:
 
 ```python
-class divide(eiffel.Routine):
-    def require(dividend, divisor):
+@eiffel.routine
+def divide(dividend, divisor):
+    with eiffel.require:
         assert divisor != 0
-
-    def do(dividend, divisor):
-        return dividend/divisor
+    with eiffel.body:
+        result = dividend/divisor
+    return result
 ```
 
-Preconditions are defined by the `require` method and are checked *before* a
-function is called:
+Preconditions must be defined inside the `eiffel.require` context manager
+*before* the `eiffel.body` context manager. Then the function fails as
+expected:
 
 ```
 >>> divide(1, 0)
@@ -54,8 +102,6 @@ Traceback (most recent call last):
 AssertionError
 ```
 
-The `require` method will have the exact arguments declared in the `do` method.
-
 ## Postconditions
 
 A **postcondition** is a predicate that must be true just *after* to the
@@ -63,17 +109,25 @@ execution of the function. For example, the absolute value of a number is
 always positive.
 
 ```python
-class absolute_value(eiffel.Routine):
-    def do(value):
-        return value if value >= 0 else -value
-
-    def ensure(result):
+@eiffel.routine
+def absolute_value(value):
+    with eiffel.body:
+        result = value
+    with eiffel.ensure:
         assert result >= 0
+    return result
 ```
 
-Postconditions are defined by the `ensure` method and are checked *after* the
-function is called. This method always get one argument that is the result of
-the function.
+Postconditions are defined inside the `eiffel.ensure` context manager. Must be
+placed *after* the `eiffel.body` context manager.
+
+## `old` object
+
+TODO
+
+## Statement order
+
+TODO
 
 ## Invariants
 
@@ -110,13 +164,13 @@ is called.
 
 ## Inheritance
 
-Since both `eiffel.Routine` and `eiffel.Class` are normal python classes, you
-can handle inheritance as usual.
+Since `eiffel.Class` is a normal python class, you can handle inheritance as
+usual.
 
 ## Undoing changes
 
 If the new object state does not meet the restriction, `eiffel.Class`
-restore the state stored in the object. For example, for the `Person` class,
+restores the state stored in the object. For example, for the `Person` class,
 the `age` property is restored after fail:
 
 ```
