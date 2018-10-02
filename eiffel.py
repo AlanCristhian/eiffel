@@ -60,78 +60,62 @@ class Class(metaclass=_MetodWrapperMeta):
         pass
 
 
-class _Statement:
-    def __enter__(self):
-        pass
-    def __exit__(*args):
-        pass
-
-
-def _check_decorated_and_order(block_name):
-    wrapper_locals = inspect.currentframe().f_back.f_back.f_back.f_locals
-    if not "__result_object__" in wrapper_locals:
-        function_frame = inspect.getouterframes(inspect.currentframe().f_back)
-        current_function_name = function_frame[1].function
-        raise ValueError(f"'{current_function_name}' function is not "
+# Returns the function namespace and the wrapper namespace. Check if the
+# function is decorated. Finally register the context manager used.
+def _get_locals_and_register(block_name):
+    function_frame = inspect.currentframe().f_back.f_back
+    wrapper_locals = function_frame.f_back.f_locals
+    if not "__block_used__" in wrapper_locals:
+        function_name = inspect.getframeinfo(function_frame).function
+        raise ValueError(f"'{function_name}' function is not "
                           "decorated with 'eiffel.routine' decorator.")
-    else:
-        wrapper_locals["__block_order__"].append(block_name)
-    return wrapper_locals["__block_order__"]
+    wrapper_locals["__block_used__"].append(block_name)
+    function_locals = function_frame.f_locals
+    return wrapper_locals, function_locals
 
 
-class _Require:
+class _ExitMethod:
+    def __exit__(self, *args):
+        pass
+
+
+class _Require(_ExitMethod):
     def __enter__(self):
-        __block_order__ = _check_decorated_and_order("require")
-        if __block_order__.index("require") != 0:
+        wrapper_locals, _ = _get_locals_and_register("require")
+        if wrapper_locals["__block_used__"].index("require") != 0:
             raise SyntaxError("'eiffel.require' must go before 'eiffel.body'.")
 
-    def __exit__(self, *args):
-        if "result" in inspect.currentframe().f_back.f_locals:
-            raise NameError("'result' object must be defined inside "
-                            "the 'eiffel.body' context manager.")
 
-
-def _current_function_name():
-    frames = inspect.getouterframes(inspect.currentframe().f_back.f_back)
-    return ".".join(f.function for f in frames)
-
-
-class _Body(_Statement):
+class _Body:
     def __init__(self):
         self.old_locals = {}
         self.actual_locals = {}
 
     def __enter__(self):
-        _check_decorated_and_order("body")
+        pass
 
     def __exit__(self, *args):
-        locals_ = inspect.currentframe().f_back.f_locals
-        if 'result' not in locals_:
-            raise NameError("'result' object is not defined.")
-        name = _current_function_name()
+        wrapper_locals, function_locals = _get_locals_and_register("body")
+        if "result" not in function_locals:
+            raise SyntaxError("'result' object is not defined.")
+        wrapper_locals["__result_object__"].append(function_locals["result"])
+        name = wrapper_locals["function"].__qualname__
         if name not in body.old_locals:
-            void_locals = {key: Void for key in locals_.keys()}
+            void_locals = {key: Void for key in function_locals.keys()}
             body.old_locals[name] = types.SimpleNamespace(**void_locals)
-            body.actual_locals[name] = types.SimpleNamespace(**locals_)
+            body.actual_locals[name] = types.SimpleNamespace(**function_locals)
         else:
             body.old_locals[name] = body.actual_locals[name]
-            body.actual_locals[name] = types.SimpleNamespace(**locals_)
-
-        wrapper_locals = inspect.currentframe().f_back.f_back.f_locals
-        wrapper_locals["__result_object__"].append(locals_["result"])
+            body.actual_locals[name] = types.SimpleNamespace(**function_locals)
 
 
-class _Ensure:
+class _Ensure(_ExitMethod):
     def __enter__(self):
-        __block_order__ = _check_decorated_and_order("ensure")
-        if not "body" in __block_order__:
+        wrapper_locals, _ = _get_locals_and_register("ensure")
+        if not "body" in wrapper_locals["__block_used__"]:
             raise SyntaxError("'eiffel.ensure' must go after 'eiffel.body'.")
-        name = _current_function_name()
+        name = wrapper_locals["function"].__qualname__
         return body.old_locals[name]
-
-    def __exit__(self, *args):
-        if 'result' not in inspect.currentframe().f_back.f_locals:
-            raise NameError("'result' object is not defined.")
 
 
 require = _Require()
@@ -147,15 +131,15 @@ def routine(function):
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
         __result_object__ = []
-        __block_order__ = []
+        __block_used__ = []
         function_output = function(*args, **kwargs)
         if not __result_object__:
             raise SyntaxError("Body block is not defined.")
-        if __block_order__.count("require") > 1:
+        if __block_used__.count("require") > 1:
             raise SyntaxError("Only one 'eiffel.require' block are allowed.")
-        if __block_order__.count("body") > 1:
+        if __block_used__.count("body") > 1:
             raise SyntaxError("Only one 'eiffel.body' block are allowed.")
-        if __block_order__.count("ensure") > 1:
+        if __block_used__.count("ensure") > 1:
             raise SyntaxError("Only one 'eiffel.ensure' block are allowed.")
         if __result_object__[0] is not function_output:
             raise ValueError(
