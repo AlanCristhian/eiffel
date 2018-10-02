@@ -3,6 +3,9 @@ import unittest
 import eiffel
 
 
+global_variable = 0
+
+
 class ClassSuite(unittest.TestCase):
     def test_check_invariants_after_initialization(self):
         class Positive(eiffel.Class):
@@ -111,6 +114,50 @@ class ClassSuite(unittest.TestCase):
             pass
         self.assertEqual(obj.attribute, 1)
 
+    def test_delete_attribute_if_no_exists_after_fail(self):
+        class Object(eiffel.Class):
+            def __invariant__(self):
+                assert not hasattr(self, "attr")
+        obj = Object()
+        with self.assertRaises(AssertionError):
+            obj.attr = 1
+        self.assertFalse(hasattr(obj, "attr"))
+
+    def test_delete_attribute_if_no_exists_after_fail_inside_method(self):
+        class Object(eiffel.Class):
+            def set_attr(self):
+                self.attr = 1
+            def __invariant__(self):
+                assert not hasattr(self, "attr")
+        obj = Object()
+        with self.assertRaises(AssertionError):
+            obj.set_attr()
+        self.assertFalse(hasattr(obj, "attr"))
+
+    def test_restore_attribute_after_fail(self):
+        class Object(eiffel.Class):
+            def __init__(self):
+                self.attr = 1
+            def __invariant__(self):
+                assert hasattr(self, "attr")
+        obj = Object()
+        with self.assertRaises(AssertionError):
+            del obj.attr
+        self.assertEqual(obj.attr, 1)
+
+    def restore_attribute_after_fail_inside_method(self):
+        class Object(eiffel.Class):
+            def __init__(self):
+                self.attr = 1
+            def del_attr(self):
+                del self.attr
+            def __invariant__(self):
+                assert hasattr(self, "attr")
+        obj = Object()
+        with self.assertRaises(AssertionError):
+            obj.del_attr()
+        self.assertEqual(obj.attr, 1)
+
 
 class ContextManagersSuite(unittest.TestCase):
     def test_undecorated_function(self):
@@ -189,13 +236,13 @@ class ContextManagersSuite(unittest.TestCase):
         with self.assertRaisesRegex(SyntaxError, message):
             identity(1)
 
-    def test_old_in_ensure(self):
+    def test_old_inside_function(self):
         @eiffel.routine
         def next_integer(n):
             with eiffel.body:
                 result = n + 1
             with eiffel.ensure as old:
-                if old is not eiffel.Void:
+                if old is not eiffel.VOID:
                     assert result == old.result + 1
             return result
 
@@ -209,6 +256,27 @@ class ContextManagersSuite(unittest.TestCase):
 
             # -1 + 1 is 0. But 0 is not 2 + 1
             next_integer(-1)
+
+    def test_old_inside_method(self):
+        class Object(eiffel.Class):
+            def __init__(self):
+                self.value = 0
+            @eiffel.routine
+            def increment(self):
+                with eiffel.body:
+                    self.value -= 1
+                    result = None
+                with eiffel.ensure as old:
+                    if old is not eiffel.VOID:
+                        assert self.value == old.self.value + 1
+        obj = Object()
+
+        # Don't check first call
+        obj.increment()
+        self.assertEqual(obj.value, -1)
+        with self.assertRaises(AssertionError):
+            obj.increment()
+        self.assertEqual(obj.value, -1)
 
     def test_result_var_different_than_function_output(self):
         @eiffel.routine
@@ -278,6 +346,31 @@ class ContextManagersSuite(unittest.TestCase):
         message = r"Only one 'eiffel.ensure' block are allowed."
         with self.assertRaisesRegex(SyntaxError, message):
             function()
+
+    def test_restore_non_local(self):
+        non_local = 0
+        @eiffel.routine
+        def function():
+            with eiffel.body:
+                result = None
+                non_local = 1
+            with eiffel.ensure:
+                assert result is not None
+        with self.assertRaises(AssertionError):
+            function()
+        self.assertEqual(non_local, 0)
+
+    def test_restore_global(self):
+        @eiffel.routine
+        def function():
+            with eiffel.body:
+                result = None
+                global_variable = 1
+            with eiffel.ensure:
+                assert result is not None
+        with self.assertRaises(AssertionError):
+            function()
+        self.assertEqual(global_variable, 0)
 
 
 if __name__ == "__main__":
