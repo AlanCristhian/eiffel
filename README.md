@@ -1,17 +1,10 @@
 # eiffel
 
-Another Python Design By Contract (DbC) module. The goal is that allows to
-declare constraints on functions and classes without decorators or lambdas.
-Also meets the full DbC especification, except automatic generation of
-documentation.
+A Python Design By Contract (DbC) module.
 
-## Installation
-
-```shell
-$ pip install git+https://github.com/AlanCristhian/eiffel.git
-```
-
-## General syntax
+The goal is that allows to declare constraints on functions and classes
+without lambdas. Also meets the full DbC especification, except automatic
+generation of documentation. The next example shows the full API and syntax:
 
 ```python
 import eiffel
@@ -33,10 +26,17 @@ class MyClass(eiffel.Class):
         INVARIANT_BLOCK
 ```
 
-## Routine
+## Installation
 
-To define a function you must decorate the function with the `eiffel.routine`
-decorator and use the `eiffel.body` context manager:
+```shell
+$ pip install git+https://github.com/AlanCristhian/eiffel.git
+```
+
+## Routines
+
+To define a routine you must decorate the function with the `eiffel.routine`
+decorator and declare the body of the function inside the `eiffel.body` context
+manager:
 
 ```python
 import eiffel
@@ -48,31 +48,30 @@ def add(x, y):
     return result
 ```
 
-You must define the `result` variable and then return it. Then you can call it
-function as usual:
+You must define the `result` variable and then return it, even if your
+function does not return nothing. In that case just assign the `None` constant.
+Then you can call it function as usual:
 
 ```
 >>> add(1, 2)
 3
 ```
 
-You must explicity define the value of the result variable, even if your
-function does not return nothing. In that case just assign the `None` constant.
-
 If the `result` object is different than the function output, the function
-will raise a `ValueError`:
+will throw a `ValueError`.
+
+You must always decorate the function with `eiffel.routine` first:
 
 ```python
+@nth_decorator
+...
+@third_decorator
+@second_decorator
 @eiffel.routine
 def function():
     with eiffel.body:
-        result = 1
-    return 2
+        result = None
 ```
-
-You must always decorate the function with `eiffel.routine` first.
-
-TODO
 
 ## Preconditions
 
@@ -121,18 +120,50 @@ def absolute_value(value):
 Postconditions are defined inside the `eiffel.ensure` context manager. Must be
 placed *after* the `eiffel.body` context manager.
 
-## `old` object
+## The `old` object
 
-TODO
+The `old` object are returned by the `eiffel.ensure` context manager. This
+object is the `eiffel.VOID` constant on *first* function call.
 
-## Statement order
+On the *second* call, stores the local namespace of the decorated function with
+the values of the *first* call. On the *third* call, have the values of the
+*second* call and so on.
 
-TODO
+For example, the following function should increment the counter. But, as you
+can see in the body, the `_counter` variable are decremented.
 
-## Invariants
+```python
+_counter = 0
 
-A **invariant** is a constraint imposed on all *public* methods of the class.
-For example, the age of a person is always positive:
+@eiffel.routine
+def increment():
+    with eiffel.body:
+        result = _counter
+        _counter = _counter - 1  # counter are decremented
+    with eiffel.ensure as old:
+        if old is not eiffel.VOID:
+            assert result == old.result + 1
+    return result
+```
+
+So, this function do not fails after the first call, but fails after the second
+invocation:
+
+```
+>>> count()
+0
+>>> count()
+Traceback (most recent call last):
+  File "<pyshell#0>", line 1, in <module>
+        assert result == old.result + 1
+AssertionError
+```
+
+## Class Invariants
+
+A **class invariant** is a constraint imposed on all *public methods* of the
+class. Public method are those that not starts with undersocre (`_`). For
+example, the age of a person is always positive:
 
 ```python
 class Person(eiffel.Class):
@@ -147,8 +178,8 @@ class Person(eiffel.Class):
 ```
 
 To define a class that can check invariants you must create a derived class of
-`eiffel.Class`, as seen in the above example. Then the constranints are defined
-by the `__invariant__` method. This method does not take arguments.
+`eiffel.Class`. Then the constranins are defined by the `__invariant__` method.
+This method does not take arguments.
 
 ```
 >> python = Person(age=10)
@@ -167,11 +198,11 @@ is called.
 Since `eiffel.Class` is a normal python class, you can handle inheritance as
 usual.
 
-## Undoing changes
+## Undoing changes on eiffel classes
 
-If the new object state does not meet the restriction, `eiffel.Class`
-restores the state stored in the object. For example, for the `Person` class,
-the `age` property is restored after fail:
+If you change some attribute of the class and then the new value don't fit the
+constrains, `eiffel.Class` restores the state. For example, for the `Person`
+class, the `age` property is restored after fail if you set a negative number:
 
 ```
 >>> python = Person(age=10)
