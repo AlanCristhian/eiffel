@@ -1,25 +1,54 @@
-"""Another Python Design By Contract implementation."""
+"""A Python Design By Contract module."""
 
 import functools
 import inspect
 import types
 
 
-__all__ = ["Class", "require", "body", "ensure", "Void", "routine"]
+__all__ = ["Class", "require", "body", "ensure", "VOID", "routine",
+           "__setattr__", "__delattr__"]
 
 
-def _set_attribute(self, name, value):
-    old_value = getattr(self, name)
+def __setattr__(self, name, value):
+    """Implement setattr(self, name, value)."""
+
+    if hasattr(self, name):
+        old_value = getattr(self, name)
+    else:
+        old_value = VOID
     if self._check_constraint:
         object.__setattr__(self, name, value)
         try:
             self.__invariant__()
         except AssertionError:
-            object.__setattr__(self, name, old_value)
+            if old_value is VOID:
+                object.__delattr__(self, name)
+            else:
+                object.__setattr__(self, name, old_value)
             raise
     else:
         self._previous_state.append((name, old_value))
         object.__setattr__(self, name, value)
+
+
+def __delattr__(self, name):
+    """Implement delattr(self, name)."""
+
+    if hasattr(self, name):
+        old_value = getattr(self, name)
+    else:
+        old_value = VOID
+    if self._check_constraint:
+        object.__delattr__(self, name)
+        try:
+            self.__invariant__()
+        except AssertionError:
+            if old_value is not VOID:
+                object.__setattr__(self, name, old_value)
+            raise
+    else:
+        self._previous_state.append((name, old_value))
+        object.__delattr__(self, name)
 
 
 class _MetodWrapperMeta(type):
@@ -41,14 +70,18 @@ class _MetodWrapperMeta(type):
                         self.__invariant__()
                     except AssertionError:
                         for name, value in reversed(self._previous_state):
-                            object.__setattr__(self, name, value)
+                            if value is VOID:
+                                object.__delattr__(self, name)
+                            else:
+                                object.__setattr__(self, name, value)
                         raise
                     finally:
                         object.__setattr__(self, "_check_constraint", True)
                     return result
                 setattr(cls, name, wrapper)
 
-        setattr(cls, "__setattr__", _set_attribute)
+        setattr(cls, "__setattr__", __setattr__)
+        setattr(cls, "__delattr__", __delattr__)
         obj.__invariant__()
         return obj
 
@@ -101,12 +134,10 @@ class _Body:
         wrapper_locals["__result_object__"].append(function_locals["result"])
         name = wrapper_locals["function"].__qualname__
         if name not in body.old_locals:
-            void_locals = {key: Void for key in function_locals.keys()}
-            body.old_locals[name] = types.SimpleNamespace(**void_locals)
-            body.actual_locals[name] = types.SimpleNamespace(**function_locals)
+            body.old_locals[name] = VOID
         else:
             body.old_locals[name] = body.actual_locals[name]
-            body.actual_locals[name] = types.SimpleNamespace(**function_locals)
+        body.actual_locals[name] = types.SimpleNamespace(**function_locals)
 
 
 class _Ensure(_ExitMethod):
@@ -124,7 +155,7 @@ ensure = _Ensure()
 
 
 # A constant that indicates that the name is empty
-Void = object()
+VOID = object()
 
 
 def routine(function):
