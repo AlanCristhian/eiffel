@@ -144,7 +144,7 @@ class ContextManagersSuite(unittest.TestCase):
             with eiffel.body:
                 return x
         message = r"'result' object is not defined."
-        with self.assertRaisesRegex(NameError, message):
+        with self.assertRaisesRegex(SyntaxError, message):
             identity(1)
 
     def test_require(self):
@@ -163,9 +163,8 @@ class ContextManagersSuite(unittest.TestCase):
         def identity(x):
             with eiffel.require:
                 result = x
-        message = r"'result' object must be defined inside " \
-                   "the 'eiffel.body' context manager."
-        with self.assertRaisesRegex(NameError, message):
+        message = r"Body block is not defined."
+        with self.assertRaisesRegex(SyntaxError, message):
             identity(1)
 
     def test_ensure(self):
@@ -187,7 +186,7 @@ class ContextManagersSuite(unittest.TestCase):
             with eiffel.ensure:
                 assert x == x
         message = r"'result' object is not defined."
-        with self.assertRaisesRegex(NameError, message):
+        with self.assertRaisesRegex(SyntaxError, message):
             identity(1)
 
     def test_old_in_ensure(self):
@@ -196,7 +195,7 @@ class ContextManagersSuite(unittest.TestCase):
             with eiffel.body:
                 result = n + 1
             with eiffel.ensure as old:
-                if old.result is not eiffel.Void:
+                if old is not eiffel.Void:
                     assert result == old.result + 1
             return result
 
