@@ -150,9 +150,9 @@ So, this function do not fails after the first call, but fails after the second
 invocation:
 
 ```
->>> count()
+>>> increment()
 0
->>> count()
+>>> increment()
 Traceback (most recent call last):
   File "<pyshell#0>", line 1, in <module>
         assert result == old.result + 1
@@ -214,3 +214,30 @@ AssertionError
 >>> python.age
 10
 ```
+
+## Overriding `__setattr__` and `__delattr__`
+
+if you want to override the `__setattr__` or `__delattr__` method of the
+`eiffel.Class` subclasses, you should use `eiffel.__setattr__` and
+`eiffel.__delattr__` functions instead `object.__setattr__` and
+`object.__delattr__` respectively. Se the example below:
+
+```python
+class LogDeleted(eiffel.Class):
+    def __init__(self):
+        self.value = "value"
+
+    def __delattr__(self, name):
+        eiffel.__delattr__(self, name)
+        print(f"'{name}' attribute was deleted")
+```
+
+```
+>>> obj = LogDeleted()
+>>> del obj.value
+'value' attribute was deleted
+```
+
+If you don't use those functions, the class will loose the hability to check
+constrains. You can use `super().__setattr__` and `super().__delattr__` if you
+want.
