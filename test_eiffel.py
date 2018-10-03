@@ -37,19 +37,6 @@ class ClassSuite(unittest.TestCase):
         with self.assertRaises(AssertionError):
             Object().attribute = -1
 
-    def test_restore_old_value_if_fail(self):
-        class Object(eiffel.Class):
-            def __init__(self):
-                self.attribute = 1
-            def __invariant__(self):
-                assert self.attribute >= 0
-        obj = Object()
-        try:
-            obj.attribute = -1
-        except AssertionError:
-            pass
-        self.assertEqual(obj.attribute, 1)
-
     def test_inheritance(self):
         class Person(eiffel.Class):
             def __init__(self, name):
@@ -60,103 +47,6 @@ class ClassSuite(unittest.TestCase):
             pass
         with self.assertRaises(AssertionError):
             Employee(name="python")
-
-    def test_undoing_changes_if_method_fail(self):
-        class Object(eiffel.Class):
-            def __init__(self):
-                self.a = 1
-                self.b = 2
-            def change(self):
-                self.a = 3
-                self.b = -4
-            def __invariant__(self):
-                assert self.a >= 0
-                assert self.b >= 0
-        obj = Object()
-        try:
-            obj.change()
-        except AssertionError:
-            pass
-        self.assertEqual(obj.a, 1)
-        self.assertEqual(obj.b, 2)
-
-    def test_undoing_changes_if_assignment_fail(self):
-        class Object(eiffel.Class):
-            def __init__(self):
-                self.attribute = 1
-            def __invariant__(self):
-                assert self.attribute >= 0
-        obj = Object()
-        try:
-            obj.attribute = 2
-            obj.attribute = 3
-            obj.attribute = 4
-            obj.attribute = -1
-        except AssertionError:
-            pass
-        self.assertEqual(obj.attribute, 4)
-
-    def test_undoing_changes_if_last_assignment_fail_inside_method(self):
-        class Object(eiffel.Class):
-            def __init__(self):
-                self.attribute = 1
-            def change(self):
-                self.attribute = 2
-                self.attribute = 3
-                self.attribute = 4
-                self.attribute = -5
-            def __invariant__(self):
-                assert self.attribute >= 0
-        obj = Object()
-        try:
-            obj.change()
-        except AssertionError:
-            pass
-        self.assertEqual(obj.attribute, 1)
-
-    def test_delete_attribute_if_no_exists_after_fail(self):
-        class Object(eiffel.Class):
-            def __invariant__(self):
-                assert not hasattr(self, "attr")
-        obj = Object()
-        with self.assertRaises(AssertionError):
-            obj.attr = 1
-        self.assertFalse(hasattr(obj, "attr"))
-
-    def test_delete_attribute_if_no_exists_after_fail_inside_method(self):
-        class Object(eiffel.Class):
-            def set_attr(self):
-                self.attr = 1
-            def __invariant__(self):
-                assert not hasattr(self, "attr")
-        obj = Object()
-        with self.assertRaises(AssertionError):
-            obj.set_attr()
-        self.assertFalse(hasattr(obj, "attr"))
-
-    def test_restore_attribute_after_fail(self):
-        class Object(eiffel.Class):
-            def __init__(self):
-                self.attr = 1
-            def __invariant__(self):
-                assert hasattr(self, "attr")
-        obj = Object()
-        with self.assertRaises(AssertionError):
-            del obj.attr
-        self.assertEqual(obj.attr, 1)
-
-    def restore_attribute_after_fail_inside_method(self):
-        class Object(eiffel.Class):
-            def __init__(self):
-                self.attr = 1
-            def del_attr(self):
-                del self.attr
-            def __invariant__(self):
-                assert hasattr(self, "attr")
-        obj = Object()
-        with self.assertRaises(AssertionError):
-            obj.del_attr()
-        self.assertEqual(obj.attr, 1)
 
 
 class ContextManagersSuite(unittest.TestCase):
@@ -276,7 +166,6 @@ class ContextManagersSuite(unittest.TestCase):
         self.assertEqual(obj.value, -1)
         with self.assertRaises(AssertionError):
             obj.increment()
-        self.assertEqual(obj.value, -1)
 
     def test_result_var_different_than_function_output(self):
         @eiffel.routine
@@ -346,31 +235,6 @@ class ContextManagersSuite(unittest.TestCase):
         message = r"Only one 'eiffel.ensure' block are allowed."
         with self.assertRaisesRegex(SyntaxError, message):
             function()
-
-    def test_restore_non_local(self):
-        non_local = 0
-        @eiffel.routine
-        def function():
-            with eiffel.body:
-                result = None
-                non_local = 1
-            with eiffel.ensure:
-                assert result is not None
-        with self.assertRaises(AssertionError):
-            function()
-        self.assertEqual(non_local, 0)
-
-    def test_restore_global(self):
-        @eiffel.routine
-        def function():
-            with eiffel.body:
-                result = None
-                global_variable = 1
-            with eiffel.ensure:
-                assert result is not None
-        with self.assertRaises(AssertionError):
-            function()
-        self.assertEqual(global_variable, 0)
 
 
 if __name__ == "__main__":

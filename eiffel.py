@@ -12,49 +12,26 @@ __all__ = ["Class", "require", "body", "ensure", "VOID", "routine",
 def __setattr__(self, name, value):
     """Implement setattr(self, name, value)."""
 
-    if hasattr(self, name):
-        old_value = getattr(self, name)
-    else:
-        old_value = VOID
     if self._check_constraint:
         object.__setattr__(self, name, value)
-        try:
-            self.__invariant__()
-        except AssertionError:
-            if old_value is VOID:
-                object.__delattr__(self, name)
-            else:
-                object.__setattr__(self, name, old_value)
-            raise
+        self.__invariant__()
     else:
-        self._previous_state.append((name, old_value))
         object.__setattr__(self, name, value)
 
 
 def __delattr__(self, name):
     """Implement delattr(self, name)."""
-
-    if hasattr(self, name):
-        old_value = getattr(self, name)
-    else:
-        old_value = VOID
     if self._check_constraint:
         object.__delattr__(self, name)
-        try:
-            self.__invariant__()
-        except AssertionError:
-            if old_value is not VOID:
-                object.__setattr__(self, name, old_value)
-            raise
+        self.__invariant__()
     else:
-        self._previous_state.append((name, old_value))
         object.__delattr__(self, name)
 
 
 class _MetodWrapperMeta(type):
     def __call__(cls, *args, **kwargs):
-        obj = super().__call__(*args, **kwargs)
-        object.__setattr__(obj, "_check_constraint", True)
+        subclass = super().__call__(*args, **kwargs)
+        object.__setattr__(subclass, "_check_constraint", True)
 
         for name, member in inspect.getmembers(cls):
             if callable(member) \
@@ -64,17 +41,9 @@ class _MetodWrapperMeta(type):
                 @functools.wraps(member)
                 def wrapper(self, *args, **kwargs):
                     object.__setattr__(self, "_check_constraint", False)
-                    object.__setattr__(self, "_previous_state", [])
                     try:
                         result = member(self, *args, **kwargs)
                         self.__invariant__()
-                    except AssertionError:
-                        for name, value in reversed(self._previous_state):
-                            if value is VOID:
-                                object.__delattr__(self, name)
-                            else:
-                                object.__setattr__(self, name, value)
-                        raise
                     finally:
                         object.__setattr__(self, "_check_constraint", True)
                     return result
@@ -82,8 +51,8 @@ class _MetodWrapperMeta(type):
 
         setattr(cls, "__setattr__", __setattr__)
         setattr(cls, "__delattr__", __delattr__)
-        obj.__invariant__()
-        return obj
+        subclass.__invariant__()
+        return subclass
 
 
 class Class(metaclass=_MetodWrapperMeta):

@@ -198,23 +198,6 @@ is called.
 Since `eiffel.Class` is a normal python class, you can handle inheritance as
 usual.
 
-## Undoing changes on eiffel classes
-
-If you change some attribute of the class and then the new value don't fit the
-constrains, `eiffel.Class` restores the state. For example, for the `Person`
-class, the `age` property is restored after fail if you set a negative number:
-
-```
->>> python = Person(age=10)
->>> python.age = -10
-Traceback (most recent call last):
-  File "<pyshell#0>", line 1, in <module>
-    assert self.age >= 0
-AssertionError
->>> python.age
-10
-```
-
 ## Overriding `__setattr__` and `__delattr__`
 
 if you want to override the `__setattr__` or `__delattr__` method of the
