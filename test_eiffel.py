@@ -48,6 +48,14 @@ class ClassSuite(unittest.TestCase):
         with self.assertRaises(AssertionError):
             Employee(name="python")
 
+    def test_that_instance_do_not_change_the_class(self):
+        class Object(eiffel.Class):
+            pass
+
+        obj = Object()
+        obj._invariant_enabled = False
+        self.assertEqual(Object._invariant_enabled, True)
+
 
 class ContextManagersSuite(unittest.TestCase):
     def test_undecorated_function(self):
