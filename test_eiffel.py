@@ -79,18 +79,8 @@ class ContextManagersSuite(unittest.TestCase):
         @eiffel.routine
         def add(x, y):
             with eiffel.body:
-                result = x + y
-            return result
+                eiffel.Return(x + y)
         self.assertEqual(add(1, 2), 3)
-
-    def test_body_without_result_variable(self):
-        @eiffel.routine
-        def identity(x):
-            with eiffel.body:
-                return x
-        message = r"'result' object is not defined."
-        with self.assertRaisesRegex(SyntaxError, message):
-            identity(1)
 
     def test_require(self):
         @eiffel.routine
@@ -117,6 +107,7 @@ class ContextManagersSuite(unittest.TestCase):
         def absolute_value(value):
             with eiffel.body:
                 result = value
+                eiffel.Return(result)
             with eiffel.ensure:
                 assert result >= 0
             return result
@@ -130,7 +121,7 @@ class ContextManagersSuite(unittest.TestCase):
                 x
             with eiffel.ensure:
                 assert x == x
-        message = r"'result' object is not defined."
+        message = r"'eiffel.Return' has not been called."
         with self.assertRaisesRegex(SyntaxError, message):
             identity(1)
 
@@ -139,10 +130,10 @@ class ContextManagersSuite(unittest.TestCase):
         def next_integer(n):
             with eiffel.body:
                 result = n + 1
+                eiffel.Return(result)
             with eiffel.ensure as old:
                 if old is not eiffel.VOID:
                     assert result == old.result + 1
-            return result
 
         # Don't check first call
         self.assertEqual(next_integer(1), 2)
@@ -163,7 +154,7 @@ class ContextManagersSuite(unittest.TestCase):
             def increment(self):
                 with eiffel.body:
                     self.value -= 1
-                    result = None
+                    eiffel.Return()
                 with eiffel.ensure as old:
                     if old is not eiffel.VOID:
                         assert self.value == old.self.value + 1
@@ -175,21 +166,11 @@ class ContextManagersSuite(unittest.TestCase):
         with self.assertRaises(AssertionError):
             obj.increment()
 
-    def test_result_var_different_than_function_output(self):
-        @eiffel.routine
-        def function():
-            with eiffel.body:
-                result = 1
-            return 2
-        message = r"'result' object is not equal to function output."
-        with self.assertRaisesRegex(ValueError, message):
-            function()
-
     def test_require_after_body(self):
         @eiffel.routine
         def function():
             with eiffel.body:
-                result = None
+                eiffel.Return()
             with eiffel.require:
                 pass
         message = r"'eiffel.require' must go before 'eiffel.body'."
@@ -215,7 +196,7 @@ class ContextManagersSuite(unittest.TestCase):
             with eiffel.require:
                 pass
             with eiffel.body:
-                result = None
+                eiffel.Return()
         message = r"Only one 'eiffel.require' block are allowed."
         with self.assertRaisesRegex(SyntaxError, message):
             function()
@@ -224,9 +205,9 @@ class ContextManagersSuite(unittest.TestCase):
         @eiffel.routine
         def function():
             with eiffel.body:
-                result = None
+                eiffel.Return()
             with eiffel.body:
-                result = None
+                eiffel.Return()
         message = r"Only one 'eiffel.body' block are allowed."
         with self.assertRaisesRegex(SyntaxError, message):
             function()
@@ -235,7 +216,7 @@ class ContextManagersSuite(unittest.TestCase):
         @eiffel.routine
         def function():
             with eiffel.body:
-                result = None
+                eiffel.Return()
             with eiffel.ensure:
                 pass
             with eiffel.ensure:

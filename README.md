@@ -17,10 +17,9 @@ class MyClass(eiffel.Class):
             REQUIRE_BLOCK
         with eiffel.body:
             BODY_BLOCK
-            result = "any value"
+            eiffel.Return("result")
         with eiffel.ensure as old:
             ENSURE_BLOCK
-        return result
 
     def __invariant__(self):
         INVARIANT_BLOCK
@@ -44,21 +43,16 @@ import eiffel
 @eiffel.routine
 def add(x, y):
     with eiffel.body:
-        result = x + y
-    return result
+        eiffel.Return(x + y)
 ```
 
-You must define the `result` variable and then return it, even if your
-function does not return nothing. In that case just assign the `None` constant.
-Then you can call it function as usual:
+You must never invoke the `return` clause. Use `eiffel.Return` instead. Then
+you can call it function as usual:
 
 ```
 >>> add(1, 2)
 3
 ```
-
-If the `result` object is different than the function output, the function
-will throw a `ValueError`.
 
 You must always decorate the function with `eiffel.routine` first:
 
@@ -70,7 +64,7 @@ You must always decorate the function with `eiffel.routine` first:
 @eiffel.routine
 def function():
     with eiffel.body:
-        result = None
+        eiffel.Return()
 ```
 
 ## Preconditions
@@ -85,8 +79,7 @@ def divide(dividend, divisor):
     with eiffel.require:
         assert divisor != 0
     with eiffel.body:
-        result = dividend/divisor
-    return result
+        eiffel.Return(dividend/divisor)
 ```
 
 Preconditions must be defined inside the `eiffel.require` context manager
@@ -111,10 +104,9 @@ always positive.
 @eiffel.routine
 def absolute_value(value):
     with eiffel.body:
-        result = value
+        eiffel.Return(value)
     with eiffel.ensure:
         assert result >= 0
-    return result
 ```
 
 Postconditions are defined inside the `eiffel.ensure` context manager. Must be
@@ -133,17 +125,16 @@ For example, the following function should increment the counter. But, as you
 can see in the body, the `_counter` variable are decremented.
 
 ```python
-_counter = 0
+counter = 0
 
 @eiffel.routine
 def increment():
     with eiffel.body:
-        result = _counter
-        _counter = _counter - 1  # counter are decremented
+        counter = counter - 1  # counter are decremented
+        eiffel.Return(counter)
     with eiffel.ensure as old:
         if old is not eiffel.VOID:
             assert result == old.result + 1
-    return result
 ```
 
 So, this function do not fails after the first call, but fails after the second

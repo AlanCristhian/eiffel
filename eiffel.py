@@ -6,7 +6,7 @@ import types
 
 
 __all__ = ["Class", "require", "body", "ensure", "VOID", "routine",
-           "__setattr__", "__delattr__"]
+           "__setattr__", "__delattr__", "Return"]
 
 
 # Class Invariant
@@ -113,7 +113,7 @@ def routine(function):
         # NOTE 5: Context managers on the body of 'function' get inside this
         # current namespace and fill '__result_object__' and '__block_used__'
         # variables.
-        function_output = function(*args, **kwargs)
+        function(*args, **kwargs)
 
         # Now I can analyze the content of the function with the informacion
         # provided:
@@ -125,12 +125,9 @@ def routine(function):
             raise SyntaxError("Only one 'eiffel.body' block are allowed.")
         if __block_used__.count("ensure") > 1:
             raise SyntaxError("Only one 'eiffel.ensure' block are allowed.")
-        if __result_object__[0] is not function_output:
-            raise ValueError(
-                "'result' object is not equal to function output.")
 
         # If all is right, return the result of the function
-        return function_output
+        return __result_object__[0]
     return wrapper
 
 
@@ -194,12 +191,13 @@ class _Body:
         pass
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type is not None:
+        if exc_type not in (None, _ReturnError):
             return
+
         wrapper_locals, function_locals = _get_locals_and_register("body")
-        if "result" not in function_locals:
-            raise SyntaxError("'result' object is not defined.")
-        wrapper_locals["__result_object__"].append(function_locals["result"])
+        if exc_value is None:
+            raise SyntaxError("'eiffel.Return' has not been called.")
+        wrapper_locals["__result_object__"].append(exc_value.result)
 
         # Creates the 'old' object
         name = wrapper_locals["function"].__qualname__
@@ -210,6 +208,9 @@ class _Body:
         else:
             body.old_locals[name] = body.actual_locals[name]
         body.actual_locals[name] = types.SimpleNamespace(**function_locals)
+
+        # Supress the RuntimeError exception
+        return True
 
 
 class _Ensure(_ExitMethod):
@@ -230,3 +231,13 @@ class _Ensure(_ExitMethod):
 require = _Require()
 body = _Body()
 ensure = _Ensure()
+
+
+class _ReturnError(RuntimeError):
+    def __init__(self, result):
+        super().__init__()
+        self.result = result
+
+
+def Return(result=None):
+    raise _ReturnError(result)
