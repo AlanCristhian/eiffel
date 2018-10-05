@@ -193,7 +193,9 @@ class _Body:
     def __enter__(self):
         pass
 
-    def __exit__(self, *args):
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is not None:
+            return
         wrapper_locals, function_locals = _get_locals_and_register("body")
         if "result" not in function_locals:
             raise SyntaxError("'result' object is not defined.")

@@ -244,6 +244,14 @@ class ContextManagersSuite(unittest.TestCase):
         with self.assertRaisesRegex(SyntaxError, message):
             function()
 
+    def test_return_when_error_in_body_context_manager(self):
+        @eiffel.routine
+        def error_on_body():
+            with eiffel.body:
+                raise NameError("name error")
+        with self.assertRaises(NameError):
+            error_on_body()
+
 
 if __name__ == "__main__":
     unittest.main()
