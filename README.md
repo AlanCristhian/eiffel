@@ -14,12 +14,11 @@ class MyClass(eiffel.Class):
     @eiffel.routine
     def function(arguments):
         with eiffel.require:
-            REQUIRE_BLOCK
-        with eiffel.body:
+            PRECONDITION_BLOCK
+        try:
             BODY_BLOCK
-            eiffel.Return("result")
-        with eiffel.ensure as old:
-            ENSURE_BLOCK
+        finally:
+            POSTCONDITION_BLOCK
 
     def __invariant__(self):
         INVARIANT_BLOCK
@@ -34,24 +33,14 @@ $ pip install git+https://github.com/AlanCristhian/eiffel.git
 ## Routines
 
 To define a routine you must decorate the function with the `eiffel.routine`
-decorator and declare the body of the function inside the `eiffel.body` context
-manager:
+decorator:
 
 ```python
 import eiffel
 
 @eiffel.routine
 def add(x, y):
-    with eiffel.body:
-        eiffel.Return(x + y)
-```
-
-You must never invoke the `return` clause. Use `eiffel.Return` instead. Then
-you can call it function as usual:
-
-```
->>> add(1, 2)
-3
+    return x + y
 ```
 
 You must always decorate the function with `eiffel.routine` first:
@@ -63,8 +52,7 @@ You must always decorate the function with `eiffel.routine` first:
 @second_decorator
 @eiffel.routine
 def function():
-    with eiffel.body:
-        eiffel.Return()
+    pass
 ```
 
 ## Preconditions
@@ -78,20 +66,17 @@ nonzero:
 def divide(dividend, divisor):
     with eiffel.require:
         assert divisor != 0
-    with eiffel.body:
-        eiffel.Return(dividend/divisor)
+    return dividend/divisor
 ```
 
-Preconditions must be defined inside the `eiffel.require` context manager
-*before* the `eiffel.body` context manager. Then the function fails as
-expected:
+`eiffel.require` does nothing. It only serves to indicate that everything
+inside is a precondition. You can skip it if you want:
 
-```
->>> divide(1, 0)
-Traceback (most recent call last):
-  File "<pyshell#0>", line 1, in <module>
+```python
+@eiffel.routine
+def divide(dividend, divisor):
     assert divisor != 0
-AssertionError
+    return dividend/divisor
 ```
 
 ## Postconditions
@@ -103,18 +88,18 @@ always positive.
 ```python
 @eiffel.routine
 def absolute_value(value):
-    with eiffel.body:
-        eiffel.Return(value)
-    with eiffel.ensure:
+    try:
+       return value if value >= 0 else -value
+    finally:
         assert result >= 0
 ```
 
-Postconditions are defined inside the `eiffel.ensure` context manager. Must be
-placed *after* the `eiffel.body` context manager.
+Postconditions must be defined inside the `finally` clause. The body of the
+function must go inside the `try` statement.
 
 ## The `old` object
 
-The `old` object are returned by the `eiffel.ensure` context manager. This
+The `old` object are returned by the `eiffel.get_old` function. This
 object is the `eiffel.VOID` constant on *first* function call.
 
 On the *second* call, stores the local namespace of the decorated function with
@@ -122,17 +107,18 @@ the values of the *first* call. On the *third* call, have the values of the
 *second* call and so on.
 
 For example, the following function should increment the counter. But, as you
-can see in the body, the `_counter` variable are decremented.
+can see in the body, the `counter` variable are decremented.
 
 ```python
 counter = 0
 
 @eiffel.routine
 def increment():
-    with eiffel.body:
+    try:
         counter = counter - 1  # counter are decremented
-        eiffel.Return(counter)
-    with eiffel.ensure as old:
+        return counter
+    finally:
+        old = eiffel.get_old()
         if old is not eiffel.VOID:
             assert result == old.result + 1
 ```
@@ -142,7 +128,7 @@ invocation:
 
 ```
 >>> increment()
-0
+-1
 >>> increment()
 Traceback (most recent call last):
   File "<pyshell#0>", line 1, in <module>
