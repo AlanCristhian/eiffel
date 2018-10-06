@@ -120,7 +120,7 @@ def increment():
     finally:
         old = eiffel.get_last()
         if old is not eiffel.VOID:
-            assert result == old.result + 1
+            assert counter == old.result + 1
 ```
 
 So, this function do not fails after the first call, but fails after the second
