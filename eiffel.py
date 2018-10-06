@@ -98,11 +98,11 @@ def routine(function):
         nonlocal __old__
 
         # NOTE 1: '__locals__' will be filled by 'function' if they call
-        # the get_old function.
+        # the get_last function.
         __locals__ = []
         result = function(*args, **kwargs)
 
-        # If '__locals__' it's not empty, 'get_old' has been called
+        # If '__locals__' it's not empty, 'get_last' has been called
         if __locals__:
             # Update the value of __old__
             old_locals = {**__locals__[0],**{"result": result}}
@@ -111,7 +111,7 @@ def routine(function):
     return wrapper
 
 
-def get_old():
+def get_last():
     """Return the local namespace of the last function call."""
 
     function_frame = inspect.currentframe().f_back

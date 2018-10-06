@@ -99,7 +99,7 @@ function must go inside the `try` statement.
 
 ## The `old` object
 
-The `old` object are returned by the `eiffel.get_old` function. This
+The `old` object are returned by the `eiffel.get_last` function. This
 object is the `eiffel.VOID` constant on *first* function call.
 
 On the *second* call, stores the local namespace of the decorated function with
@@ -118,7 +118,7 @@ def increment():
         counter = counter - 1  # counter are decremented
         return counter
     finally:
-        old = eiffel.get_old()
+        old = eiffel.get_last()
         if old is not eiffel.VOID:
             assert result == old.result + 1
 ```
