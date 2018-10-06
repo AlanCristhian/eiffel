@@ -89,7 +89,8 @@ always positive.
 @eiffel.routine
 def absolute_value(value):
     try:
-       return value if value >= 0 else -value
+       result = value if value >= 0 else -value
+       return result
     finally:
         assert result >= 0
 ```
