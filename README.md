@@ -69,15 +69,7 @@ def divide(dividend, divisor):
     return dividend/divisor
 ```
 
-`eiffel.require` does nothing. It only serves to indicate that everything
-inside is a precondition. You can skip it if you want:
-
-```python
-@eiffel.routine
-def divide(dividend, divisor):
-    assert divisor != 0
-    return dividend/divisor
-```
+`eiffel.require` does nothing. It's a visual way to group all preconditions.
 
 ## Postconditions
 
@@ -101,7 +93,7 @@ function must go inside the `try` statement.
 ## The `old` object
 
 The `old` object are returned by the `eiffel.get_last` function. This
-object is the `eiffel.VOID` constant on *first* function call.
+object is `None` on *first* function call.
 
 On the *second* call, stores the local namespace of the decorated function with
 the values of the *first* call. On the *third* call, have the values of the
@@ -120,8 +112,8 @@ def increment():
         return counter
     finally:
         old = eiffel.get_last()
-        if old is not eiffel.VOID:
-            assert counter == old.result + 1
+        if old:
+            assert counter == old.__result__ + 1
 ```
 
 So, this function do not fails after the first call, but fails after the second
@@ -133,9 +125,11 @@ invocation:
 >>> increment()
 Traceback (most recent call last):
   File "<pyshell#0>", line 1, in <module>
-        assert result == old.result + 1
+        assert counter == old.__result__ + 1
 AssertionError
 ```
+
+`old.__result__` is the last output of the function.
 
 ## Class Invariants
 
@@ -181,7 +175,8 @@ usual.
 if you want to override the `__setattr__` or `__delattr__` method of the
 `eiffel.Class` subclasses, you should use `eiffel.__setattr__` and
 `eiffel.__delattr__` functions instead `object.__setattr__` and
-`object.__delattr__` respectively. Se the example below:
+`object.__delattr__` respectively. Also you can use `super().__setattr__` and
+`super().__setattr__` Se the example below:
 
 ```python
 class LogDeleted(eiffel.Class):
@@ -190,15 +185,14 @@ class LogDeleted(eiffel.Class):
 
     def __delattr__(self, name):
         eiffel.__delattr__(self, name)
-        print(f"'{name}' attribute was deleted")
+        print(f"'{name}' attribute has been deleted")
 ```
 
 ```
 >>> obj = LogDeleted()
 >>> del obj.value
-'value' attribute was deleted
+'value' attribute has been deleted
 ```
 
 If you don't use those functions, the class will loose the hability to check
-constrains. You can use `super().__setattr__` and `super().__delattr__` if you
-want.
+constrains.
