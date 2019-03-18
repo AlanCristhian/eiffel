@@ -92,7 +92,7 @@ class ContextManagersSuite(unittest.TestCase):
                 return result
             finally:
                 old = eiffel.get_last()
-                if old is not eiffel.VOID:
+                if old:
                     assert result == old.result + 1
 
         # Don't check first call
@@ -104,6 +104,7 @@ class ContextManagersSuite(unittest.TestCase):
 
             # -1 + 1 is 0. But 0 is not 2 + 1
             next_integer(-1)
+
     def test_function_no_decorated(self):
         def function():
             try:
@@ -114,6 +115,25 @@ class ContextManagersSuite(unittest.TestCase):
                    "with 'eiffel.routine' decorator."
         with self.assertRaisesRegex(ValueError, message):
             function()
+
+    def test___result___attribute_on_old(self):
+        def counter():
+            start = -1
+            @eiffel.routine
+            def count():
+                try:
+                    nonlocal start
+                    start = start + 1
+                    return start
+                finally:
+                    old = eiffel.get_last()
+                    if old:
+                        assert start == old.__result__ + 1
+            return count
+        count = counter()
+        for i in range(10):
+            self.assertEqual(i, count())
+
 
 
 if __name__ == "__main__":
