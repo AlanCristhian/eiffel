@@ -105,3 +105,4 @@ venv.bak/
 
 # Develop
 *.diff
+*.sublime-workspace
