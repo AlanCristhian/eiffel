@@ -46,6 +46,8 @@ def add(x, y):
 You must always decorate the function with `eiffel.routine` first:
 
 ```python
+import eiffel
+
 @nth_decorator
 ...
 @third_decorator
@@ -62,6 +64,8 @@ execution of a function. For example, in the division the divisor must be
 nonzero:
 
 ```python
+import eiffel
+
 @eiffel.routine
 def divide(dividend, divisor):
     with eiffel.require:
@@ -78,6 +82,8 @@ execution of the function. For example, the absolute value of a number is
 always positive.
 
 ```python
+import eiffel
+
 @eiffel.routine
 def absolute_value(value):
     try:
@@ -92,7 +98,7 @@ function must go inside the `try` statement.
 
 ## The `old` object
 
-The `old` object are returned by the `eiffel.get_last` function. This
+The `old` object are returned by the `eiffel.get_old` function. This
 object is `None` on *first* function call.
 
 On the *second* call, stores the local namespace of the decorated function with
@@ -103,6 +109,8 @@ For example, the following function should increment the counter. But, as you
 can see in the body, the `counter` variable are decremented.
 
 ```python
+import eiffel
+
 counter = 0
 
 @eiffel.routine
@@ -111,7 +119,7 @@ def increment():
         counter = counter - 1  # counter are decremented
         return counter
     finally:
-        old = eiffel.get_last()
+        old = eiffel.get_old()
         if old:
             assert counter == old.__result__ + 1
 ```
@@ -138,6 +146,8 @@ class. Public method are those that not starts with undersocre (`_`). For
 example, the age of a person is always positive:
 
 ```python
+import eiffel
+
 class Person(eiffel.Class):
     def __init__(self, age):
         self.age = age
@@ -179,6 +189,8 @@ if you want to override the `__setattr__` or `__delattr__` method of the
 `super().__setattr__` Se the example below:
 
 ```python
+import eiffel
+
 class LogDeleted(eiffel.Class):
     def __init__(self):
         self.value = "value"

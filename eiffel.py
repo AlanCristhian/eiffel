@@ -6,6 +6,7 @@ import types
 
 
 __all__ = ["Class", "__setattr__", "__delattr__", "routine", "require"]
+__version__ = "0.1.0"
 
 
 # Class Invariant
@@ -90,45 +91,36 @@ class Class(metaclass=_ConstraintCheckerMeta):
 def routine(function):
     """A decorator that register the result of the function."""
 
-    __old__ = None
+    # NOTE 1: this object will be  filled by get_old function.
+    __old__ = [{}]
 
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
-        nonlocal __old__
-
-        # NOTE 1: '__locals__' will be filled by 'function'
-        # if they call the 'get_last' function.
-        __locals__ = []
-        result = function(*args, **kwargs)
-
-        # If '__locals__' it's not empty, 'get_last'
-        # has been called by 'function'
-        if __locals__:
-            # Update the value of __old__
-            old_locals = {**__locals__[0], **{"__result__": result}}
-            __old__ = types.SimpleNamespace(**old_locals)
+        result = __old__[0]["__result__"] = function(*args, **kwargs)
         return result
 
     return wrapper
 
 
-def get_last():
+def get_old():
     """Return the local namespace of the last function call."""
 
+    # function_frame is the namespace of the decorated function.
     function_frame = inspect.currentframe().f_back
+
+    # wrapper_locals is the namespace of the decorator.
     wrapper_locals = function_frame.f_back.f_locals
 
-    if "__locals__" not in wrapper_locals \
-    and "__old__" not in wrapper_locals:
+    # __old__ is the one indicated in NOTE 1
+    if "__old__" not in wrapper_locals:
         function_name = inspect.getframeinfo(function_frame).function
         raise ValueError(f"'{function_name}' function is not decorated with "
-                          "'eiffel.routine' decorator.")
+                         "'eiffel.routine' decorator.")
 
-    # '__locals__' is the one indicated in NOTE 1 and 'function_frame.f_locals'
-    # is the local namespace of the decorated function.
-    wrapper_locals["__locals__"].append(function_frame.f_locals)
+    old = wrapper_locals["__old__"].pop()
+    wrapper_locals["__old__"].append(function_frame.f_locals)
 
-    return wrapper_locals["__old__"]
+    return types.SimpleNamespace(**old) if old else None
 
 
 class _Require:

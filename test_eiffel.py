@@ -91,7 +91,7 @@ class ContextManagersSuite(unittest.TestCase):
                 result = n + 1
                 return result
             finally:
-                old = eiffel.get_last()
+                old = eiffel.get_old()
                 if old:
                     assert result == old.result + 1
 
@@ -110,7 +110,7 @@ class ContextManagersSuite(unittest.TestCase):
             try:
                 result = None
             finally:
-                old = eiffel.get_last()
+                old = eiffel.get_old()
         message = r"'function' function is not decorated " \
                    "with 'eiffel.routine' decorator."
         with self.assertRaisesRegex(ValueError, message):
@@ -126,7 +126,7 @@ class ContextManagersSuite(unittest.TestCase):
                     start = start + 1
                     return start
                 finally:
-                    old = eiffel.get_last()
+                    old = eiffel.get_old()
                     if old:
                         assert start == old.__result__ + 1
             return count
