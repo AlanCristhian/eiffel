@@ -1,11 +1,12 @@
 """A Python Design By Contract module."""
 
 import functools
-import inspect
+import sys
 import types
 
 
-__all__ = ["Class", "__setattr__", "__delattr__", "routine", "require"]
+__all__ = ["Class", "__setattr__", "__delattr__", "routine", "require",
+           "get_old"]
 __version__ = "0.1.0"
 
 
@@ -37,22 +38,6 @@ def _constraint_checker(function):
     return wrapper
 
 
-class _ConstraintCheckerMeta(type):
-
-    # Remember that when __init__ is called, the class object
-    # already exists and is given by the 'cls' argument.
-    def __init__(cls, name, bases, namespace):
-        for name, member in inspect.getmembers(cls):
-            if callable(member) and not name.startswith("_"):
-                setattr(cls, name, _constraint_checker(member))
-
-    # Instantiate the class, check the constraint and returns the instance
-    def __call__(cls, *args, **kwargs):
-        instance = super().__call__(*args, **kwargs)
-        instance.__invariant__()
-        return instance
-
-
 # I define __setattr__ and __delattr__ here
 # because they will be part of the public API.
 
@@ -75,7 +60,7 @@ def __delattr__(self, name):
         self.__invariant__()
 
 
-class Class(metaclass=_ConstraintCheckerMeta):
+class Class:
     """Make a class that can define invariants."""
 
     _invariant_enabled = True
@@ -87,6 +72,15 @@ class Class(metaclass=_ConstraintCheckerMeta):
     def __invariant__(self):
         pass
 
+    def __init_subclas__(cls):
+        base_vars = vars(cls.__base__)
+        for name, member in vars(cls).items():
+            if name not in base_vars \
+            and callable(member) \
+            and not name.startswith("_"):  # noqa
+                setattr(cls, name, _constraint_checker(member))
+        super().__init_subclass__()
+
 
 def routine(function):
     """A decorator that register the result of the function."""
@@ -96,31 +90,34 @@ def routine(function):
 
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
-        result = __old__[0]["__result__"] = function(*args, **kwargs)
-        return result
+        __old__
+        return function(*args, **kwargs)
 
     return wrapper
 
 
 def get_old():
     """Return the local namespace of the last function call."""
+    try:
+        # function_frame is the namespace of the decorated function.
+        function_frame = sys._getframe(1)
 
-    # function_frame is the namespace of the decorated function.
-    function_frame = inspect.currentframe().f_back
+        # wrapper_locals is the namespace of the decorator.
+        wrapper_locals = function_frame.f_back.f_locals
 
-    # wrapper_locals is the namespace of the decorator.
-    wrapper_locals = function_frame.f_back.f_locals
+        # __old__ is the one indicated in NOTE 1
+        if "__old__" not in wrapper_locals:
+            function_name = function_frame.f_code.co_name
+            raise ValueError(f"'{function_name}' function is not decorated"
+                             " with 'eiffel.routine' decorator.")
 
-    # __old__ is the one indicated in NOTE 1
-    if "__old__" not in wrapper_locals:
-        function_name = inspect.getframeinfo(function_frame).function
-        raise ValueError(f"'{function_name}' function is not decorated with "
-                         "'eiffel.routine' decorator.")
+        old = wrapper_locals["__old__"].pop()
+        wrapper_locals["__old__"].append(function_frame.f_locals)
 
-    old = wrapper_locals["__old__"].pop()
-    wrapper_locals["__old__"].append(function_frame.f_locals)
-
-    return types.SimpleNamespace(**old) if old else None
+        return types.SimpleNamespace(**old) if old else None
+    finally:
+        del wrapper_locals
+        del function_frame
 
 
 class _Require:
