@@ -112,7 +112,7 @@ class _Require:
 require = _Require()
 
 
-class Old:
+class _Old:
     def __bool__(self) -> bool:
         """Lookup the local namespace of the last function call."""
         try:
@@ -145,4 +145,4 @@ class Old:
             del function_frame
 
 
-old = Old()
+old = _Old()
