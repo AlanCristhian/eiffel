@@ -98,8 +98,7 @@ function must go inside the `try` statement.
 
 ## The `old` object
 
-The `old` object are returned by the `eiffel.get_old` function. This
-object is `None` on *first* function call.
+This object is void on *first* function call.
 
 On the *second* call, stores the local namespace of the decorated function with
 the values of the *first* call. On the *third* call, have the values of the
