@@ -249,7 +249,5 @@ class OldObjectSuit(unittest.TestCase):
         function_2()
 
 
-
-
 if __name__ == "__main__":
     unittest.main()
