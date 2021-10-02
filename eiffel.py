@@ -3,11 +3,12 @@
 import functools
 import sys
 import types
+from typing import Callable, Any, Optional
 
 
 __all__ = ["Class", "__setattr__", "__delattr__", "routine", "require",
-           "get_old"]
-__version__ = "0.1.0"
+           "get_old", "old"]
+__version__ = "0.2.0"
 
 
 # Class Invariant
@@ -20,10 +21,15 @@ __version__ = "0.1.0"
 # __setattr__ and __delattr__ must also be overrided, because they change the
 # state of the instance.
 
+TKwArgs = dict[str, Any]
+TArgs = tuple[Any]
 
-def _constraint_checker(function):
+
+def _constraint_checker(
+    function: Callable[..., Any]
+) -> Callable[[Any], Any]:
     @functools.wraps(function)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self: Any, *args: TArgs, **kwargs: TKwArgs) -> Any:
 
         # Disable the constraint tester of __setattr__ and __delattr__
         # functions to ensure that __invariant__ are called only once, and
@@ -42,7 +48,7 @@ def _constraint_checker(function):
 # because they will be part of the public API.
 
 
-def __setattr__(self, name, value):
+def __setattr__(self: Any, name: str, value: Any) -> None:
     """Assigns the value to the attribute, then
     check that the invariant are maintaned."""
 
@@ -51,7 +57,7 @@ def __setattr__(self, name, value):
         self.__invariant__()
 
 
-def __delattr__(self, name):
+def __delattr__(self: Any, name: str) -> None:
     """Delete the attribute, then check
     that the invariant are maintaned."""
 
@@ -69,11 +75,11 @@ class Class:
     __delattr__ = __delattr__
     __setattr__ = __setattr__
 
-    def __invariant__(self):
+    def __invariant__(self) -> None:
         pass
 
-    def __init_subclas__(cls):
-        base_vars = vars(cls.__base__)
+    def __init_subclas__(cls) -> None:
+        base_vars = vars(cls.__base__)  # type: ignore[attr-defined]
         for name, member in vars(cls).items():
             if name not in base_vars \
             and callable(member) \
@@ -82,50 +88,91 @@ class Class:
         super().__init_subclass__()
 
 
-def routine(function):
+def routine(function: Callable[..., Any]) -> Callable[..., Any]:
     """A decorator that register the result of the function."""
 
     # NOTE 1: this object will be  filled by get_old function.
-    __old__ = [{}]
+    __old__: list[dict[str, Any]] = [{}]
 
     @functools.wraps(function)
-    def wrapper(*args, **kwargs):
-        __old__
-        return function(*args, **kwargs)
+    def wrapper(*args: TArgs, **kwargs: TKwArgs) -> Any:
+        result = __old__[0]["__result__"] = function(*args, **kwargs)
+        return result
 
     return wrapper
 
 
-def get_old():
+def get_old() -> Optional[types.SimpleNamespace]:
     """Return the local namespace of the last function call."""
     try:
         # function_frame is the namespace of the decorated function.
-        function_frame = sys._getframe(1)
+        function_frame: Optional[types.FrameType] = sys._getframe(1)
 
-        # wrapper_locals is the namespace of the decorator.
-        wrapper_locals = function_frame.f_back.f_locals
+        if function_frame is not None:
 
-        # __old__ is the one indicated in NOTE 1
-        if "__old__" not in wrapper_locals:
-            function_name = function_frame.f_code.co_name
-            raise ValueError(f"'{function_name}' function is not decorated"
-                             " with 'eiffel.routine' decorator.")
+            # wrapper_locals is the namespace of the decorator.
+            wrapper_locals = function_frame\
+                .f_back.f_locals  # type: ignore[union-attr]
 
-        old = wrapper_locals["__old__"].pop()
-        wrapper_locals["__old__"].append(function_frame.f_locals)
+            # __old__ is the one indicated in NOTE 1
+            if "__old__" not in wrapper_locals:
+                function_name = function_frame.f_code.co_name
+                raise ValueError(f"'{function_name}' function is not decorated"
+                                 " with 'eiffel.routine' decorator.")
 
-        return types.SimpleNamespace(**old) if old else None
+            old = wrapper_locals["__old__"].pop()
+            wrapper_locals["__old__"].append(function_frame.f_locals)
+
+            return types.SimpleNamespace(**old) if old else None
+        else:
+            return None
     finally:
         del wrapper_locals
         del function_frame
 
 
 class _Require:
-    def __enter__(self):
+    def __enter__(self) -> None:
         pass
 
-    def __exit__(*args):
+    def __exit__(*args) -> None:
         pass
 
 
 require = _Require()
+
+
+class Old:
+    def __bool__(self) -> bool:
+        """Lookup the local namespace of the last function call."""
+        try:
+            # function_frame is the namespace of the decorated function.
+            function_frame: Optional[types.FrameType] = sys._getframe(1)
+
+            if function_frame is not None:
+                function_name = function_frame.f_code.co_name
+
+                # wrapper_locals is the namespace of the decorator.
+                wrapper_locals = function_frame\
+                    .f_back.f_locals  # type: ignore[union-attr]
+
+                # __old__ is the one indicated in NOTE 1
+                if "__old__" not in wrapper_locals:
+                    raise ValueError(
+                        f"'{function_name}' function is not decorated"
+                        " with 'eiffel.routine' decorator.")
+
+                locals_ = wrapper_locals["__old__"].pop()
+                wrapper_locals["__old__"].append(function_frame.f_locals)
+                if locals_:
+                    for name, value in locals_.items():
+                        setattr(self, name, value)
+                    return True
+
+            return False
+        finally:
+            del wrapper_locals
+            del function_frame
+
+
+old = Old()
