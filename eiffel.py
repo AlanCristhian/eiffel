@@ -6,9 +6,8 @@ import types
 from typing import Callable, Any, Optional
 
 
-__all__ = ["Class", "__setattr__", "__delattr__", "routine", "require",
-           "get_old", "old"]
-__version__ = "0.2.0"
+__all__ = ["Class", "__setattr__", "__delattr__", "routine", "require", "old"]
+__version__ = "0.3.0"
 
 
 # Class Invariant
@@ -100,35 +99,6 @@ def routine(function: Callable[..., Any]) -> Callable[..., Any]:
         return result
 
     return wrapper
-
-
-def get_old() -> Optional[types.SimpleNamespace]:
-    """Return the local namespace of the last function call."""
-    try:
-        # function_frame is the namespace of the decorated function.
-        function_frame: Optional[types.FrameType] = sys._getframe(1)
-
-        if function_frame is not None:
-
-            # wrapper_locals is the namespace of the decorator.
-            wrapper_locals = function_frame\
-                .f_back.f_locals  # type: ignore[union-attr]
-
-            # __old__ is the one indicated in NOTE 1
-            if "__old__" not in wrapper_locals:
-                function_name = function_frame.f_code.co_name
-                raise ValueError(f"'{function_name}' function is not decorated"
-                                 " with 'eiffel.routine' decorator.")
-
-            old = wrapper_locals["__old__"].pop()
-            wrapper_locals["__old__"].append(function_frame.f_locals)
-
-            return types.SimpleNamespace(**old) if old else None
-        else:
-            return None
-    finally:
-        del wrapper_locals
-        del function_frame
 
 
 class _Require:

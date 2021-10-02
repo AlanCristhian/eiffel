@@ -109,61 +109,6 @@ class ContextManagersSuite(unittest.TestCase):
         with self.assertRaises(AssertionError):
             absolute_value(-5)
 
-    def test_old(self):
-
-        @eiffel.routine
-        def next_integer(n):
-            try:
-                result = n + 1
-                return result
-            finally:
-                old = eiffel.get_old()
-                if old:
-                    assert result == old.result + 1
-
-        # Don't check first call
-        self.assertEqual(next_integer(1), 2)
-
-        # 3 is 2 + 1
-        self.assertEqual(next_integer(2), 3)
-        with self.assertRaises(AssertionError):
-
-            # -1 + 1 is 0. But 0 is not 2 + 1
-            next_integer(-1)
-
-    def test_function_no_decorated(self):
-
-        def function():
-            old = eiffel.get_old()
-
-        message = r"'function' function is not decorated " \
-                   "with 'eiffel.routine' decorator."
-
-        with self.assertRaisesRegex(ValueError, message):
-            function()
-
-    def test___result___attribute_on_old(self):
-
-        def counter():
-            start = -1
-
-            @eiffel.routine
-            def count():
-                try:
-                    nonlocal start
-                    start = start + 1
-                    return start
-                finally:
-                    old = eiffel.get_old()
-                    if old:
-                        assert start == old.__result__ + 1
-            return count
-
-        count = counter()
-
-        for i in range(10):
-            self.assertEqual(i, count())
-
 
 class OldObjectSuit(unittest.TestCase):
 

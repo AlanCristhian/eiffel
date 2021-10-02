@@ -119,9 +119,8 @@ def increment():
         counter = counter - 1  # counter are decremented
         return counter
     finally:
-        old = eiffel.get_old()
-        if old:
-            assert counter == old.__result__ + 1
+        if eiffel.old:
+            assert counter == eiffel.old.__result__ + 1
 ```
 
 So, this function do not fails after the first call, but fails after the second
