@@ -120,7 +120,6 @@ class _Old:
             function_frame: Optional[types.FrameType] = sys._getframe(1)
 
             if function_frame is not None:
-                function_name = function_frame.f_code.co_name
 
                 # wrapper_locals is the namespace of the decorator.
                 wrapper_locals = function_frame\
@@ -128,6 +127,7 @@ class _Old:
 
                 # __old__ is the one indicated in NOTE 1
                 if "__old__" not in wrapper_locals:
+                    function_name = function_frame.f_code.co_name
                     raise ValueError(
                         f"'{function_name}' function is not decorated"
                         " with 'eiffel.routine' decorator.")
