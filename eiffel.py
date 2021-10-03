@@ -3,7 +3,7 @@
 import functools
 import sys
 import types
-from typing import Callable, Any, Optional
+from typing import Callable, Any, Optional, Dict, Tuple
 
 
 __all__ = ["Class", "__setattr__", "__delattr__", "routine", "require", "old"]
@@ -20,8 +20,8 @@ __version__ = "0.3.0"
 # __setattr__ and __delattr__ must also be overrided, because they change the
 # state of the instance.
 
-TKwArgs = dict[str, Any]
-TArgs = tuple[Any]
+TKwArgs = Dict[str, Any]
+TArgs = Tuple[Any]
 
 
 def _constraint_checker(
