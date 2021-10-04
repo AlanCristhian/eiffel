@@ -183,14 +183,10 @@ class OldObjectSuit(unittest.TestCase):
                 return value
             finally:
                 if eiffel.old:
+                    function_1()
+                    function_1()
                     assert eiffel.old.value == 2
-        function_1()
-        function_1()
         function_2()
-        function_2()
-        function_1()
-        function_2()
-        function_1()
         function_2()
 
 

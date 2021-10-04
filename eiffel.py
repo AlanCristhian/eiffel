@@ -113,6 +113,8 @@ require = _Require()
 
 
 class _Old:
+    namespace: Dict[str, Dict[str, Any]] = {}
+
     def __bool__(self) -> bool:
         """Lookup the local namespace of the last function call."""
         try:
@@ -120,6 +122,7 @@ class _Old:
             function_frame: Optional[types.FrameType] = sys._getframe(1)
 
             if function_frame is not None:
+                function_name = function_frame.f_code.co_name
 
                 # wrapper_locals is the namespace of the decorator.
                 wrapper_locals = function_frame\
@@ -127,7 +130,6 @@ class _Old:
 
                 # __old__ is the one indicated in NOTE 1
                 if "__old__" not in wrapper_locals:
-                    function_name = function_frame.f_code.co_name
                     raise ValueError(
                         f"'{function_name}' function is not decorated"
                         " with 'eiffel.routine' decorator.")
@@ -135,14 +137,28 @@ class _Old:
                 locals_ = wrapper_locals["__old__"].pop()
                 wrapper_locals["__old__"].append(function_frame.f_locals)
                 if locals_:
-                    for name, value in locals_.items():
-                        setattr(self, name, value)
+                    self.namespace[function_name] = locals_
                     return True
 
             return False
         finally:
             del wrapper_locals
             del function_frame
+
+    def __getattribute__(self, attr_name: str) -> Any:
+        try:
+            return super().__getattribute__(attr_name)
+        except AttributeError as error:
+            try:
+                function_frame: Optional[types.FrameType] = sys._getframe(1)
+                if function_frame is not None:
+                    function_name = function_frame.f_code.co_name
+                    if function_name in self.namespace:
+                        if attr_name in self.namespace[function_name]:
+                            return self.namespace[function_name][attr_name]
+                raise error
+            finally:
+                del function_frame
 
 
 old = _Old()
