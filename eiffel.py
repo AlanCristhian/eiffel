@@ -7,7 +7,10 @@ from typing import Callable, Any, Optional, Dict, Tuple
 
 
 __all__ = ["Class", "__setattr__", "__delattr__", "routine", "require", "old"]
-__version__ = "0.3.0"
+__version__ = "0.3.1"
+
+TKwArgs = Dict[str, Any]
+TArgs = Tuple[Any]
 
 
 # Class Invariant
@@ -19,9 +22,6 @@ __version__ = "0.3.0"
 #
 # __setattr__ and __delattr__ must also be overrided, because they change the
 # state of the instance.
-
-TKwArgs = Dict[str, Any]
-TArgs = Tuple[Any]
 
 
 def _constraint_checker(
@@ -91,7 +91,7 @@ def routine(function: Callable[..., Any]) -> Callable[..., Any]:
     """A decorator that register the result of the function."""
 
     # NOTE 1: this object will be  filled by get_old function.
-    __old__: list[dict[str, Any]] = [{}]
+    __old__: list[TKwArgs] = [{}]
 
     @functools.wraps(function)
     def wrapper(*args: TArgs, **kwargs: TKwArgs) -> Any:
@@ -113,7 +113,7 @@ require = _Require()
 
 
 class _Old:
-    namespace: Dict[Tuple[str, int], Dict[str, Any]] = {}
+    namespace: Dict[Tuple[str, int], TKwArgs] = {}
 
     def __bool__(self) -> bool:
         """Lookup the local namespace of the last function call."""
