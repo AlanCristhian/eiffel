@@ -113,7 +113,7 @@ require = _Require()
 
 
 class _Old:
-    namespace: Dict[str, Dict[str, Any]] = {}
+    namespace: Dict[Tuple[str, int], Dict[str, Any]] = {}
 
     def __bool__(self) -> bool:
         """Lookup the local namespace of the last function call."""
@@ -122,7 +122,10 @@ class _Old:
             function_frame: Optional[types.FrameType] = sys._getframe(1)
 
             if function_frame is not None:
-                function_name = function_frame.f_code.co_name
+                function_id = (
+                    function_frame.f_code.co_filename,
+                    function_frame.f_code.co_firstlineno
+                )
 
                 # wrapper_locals is the namespace of the decorator.
                 wrapper_locals = function_frame\
@@ -130,6 +133,7 @@ class _Old:
 
                 # __old__ is the one indicated in NOTE 1
                 if "__old__" not in wrapper_locals:
+                    function_name = function_frame.f_code.co_name
                     raise ValueError(
                         f"'{function_name}' function is not decorated"
                         " with 'eiffel.routine' decorator.")
@@ -137,7 +141,7 @@ class _Old:
                 locals_ = wrapper_locals["__old__"].pop()
                 wrapper_locals["__old__"].append(function_frame.f_locals)
                 if locals_:
-                    self.namespace[function_name] = locals_
+                    self.namespace[function_id] = locals_
                     return True
 
             return False
@@ -152,10 +156,13 @@ class _Old:
             try:
                 function_frame: Optional[types.FrameType] = sys._getframe(1)
                 if function_frame is not None:
-                    function_name = function_frame.f_code.co_name
-                    if function_name in self.namespace:
-                        if attr_name in self.namespace[function_name]:
-                            return self.namespace[function_name][attr_name]
+                    function_id = (
+                        function_frame.f_code.co_filename,
+                        function_frame.f_code.co_firstlineno
+                    )
+                    if function_id in self.namespace:
+                        if attr_name in self.namespace[function_id]:
+                            return self.namespace[function_id][attr_name]
                 raise error
             finally:
                 del function_frame
