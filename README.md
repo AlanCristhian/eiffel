@@ -119,7 +119,7 @@ def increment():
         return counter
     finally:
         if eiffel.old:
-            assert counter == eiffel.old.__result__ + 1
+            assert counter == eiffel.old.counter + 1
 ```
 
 So, this function do not fails after the first call, but fails after the second
@@ -131,11 +131,9 @@ invocation:
 >>> increment()
 Traceback (most recent call last):
   File "<pyshell#0>", line 1, in <module>
-        assert counter == old.__result__ + 1
+        assert counter == eiffel.old.counter + 1
 AssertionError
 ```
-
-`old.__result__` is the last output of the function.
 
 ## Class Invariants
 
