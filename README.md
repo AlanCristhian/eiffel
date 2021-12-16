@@ -9,19 +9,23 @@ generation of documentation. The next example shows the full API and syntax:
 ```python
 import eiffel
 
-class MyClass(eiffel.Class):
+class MyClass(eiffel.Class):  # Inherit from an eiffel class
 
-    @eiffel.routine
+    @eiffel.routine  # Ensure that is an eiffel routine
     def function(arguments):
         with eiffel.require:
-            PRECONDITION_BLOCK
+            # Precondition Block
+            ...
         try:
-            BODY_BLOCK
+            # Body Block
+            ...
         finally:
-            POSTCONDITION_BLOCK
+            # Postcondition Block
+            ...
 
     def __invariant__(self):
-        INVARIANT_BLOCK
+        # Invariant Block
+        ...
 ```
 
 ## Installation
@@ -203,4 +207,4 @@ class LogDeleted(eiffel.Class):
 ```
 
 If you don't use those functions, the class will loose the hability to check
-constrains.
+constrains defined on the ´´__invariant__ method´´.
