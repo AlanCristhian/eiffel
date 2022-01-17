@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="eiffel",
-    version="0.3.1",
+    version="0.3.2",
     py_modules=["eiffel"],
 
     zip_safe=True,
