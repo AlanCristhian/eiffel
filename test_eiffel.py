@@ -111,21 +111,21 @@ class ContextManagersSuite(unittest.TestCase):
 
 
 class OldObjectSuit(unittest.TestCase):
-    # def test_old_without_check_if_is_defined(self):
+    def test_old_without_check_if_is_defined(self):
 
-    #     @eiffel.routine
-    #     def previous_integer(n):
-    #         try:
-    #             result = n - 1
-    #             return result
-    #         finally:
-    #             assert result == eiffel.old.result + 1
+        @eiffel.routine
+        def previous_integer(n):
+            try:
+                result = n - 1
+                return result
+            finally:
+                assert result == eiffel.old.result + 1
 
-    #     message = r"'old' is not defined. Try check if it is defined " \
-    #               r"before check for postconditions."
+        message = r"'old' has no attributes. Wrap your postconditions " \
+                  r"inside an 'if eiffel.old:' statement."
 
-    #     with self.assertRaisesRegex(ValueError, message):
-    #         previous_integer(2)
+        with self.assertRaisesRegex(ValueError, message):
+            previous_integer(2)
 
     def test_old_after_check_if_is_defined(self):
 
