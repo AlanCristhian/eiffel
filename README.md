@@ -34,7 +34,9 @@ class MyClass(eiffel.Class):  # Inherit from an eiffel class
 $ pip install git+https://github.com/AlanCristhian/eiffel.git
 ```
 
-## Routines
+## Tutorial
+
+### Routines
 
 To define a routine you must decorate the function with the `eiffel.routine`
 decorator:
@@ -61,7 +63,7 @@ def function():
     pass
 ```
 
-## Preconditions
+### Preconditions
 
 A **precondition** is a predicate that must be true just prior to the
 execution of a function. For example, in the division the divisor must be
@@ -79,7 +81,7 @@ def divide(dividend, divisor):
 
 `eiffel.require` does nothing. It's a visual way to group all preconditions.
 
-## Postconditions
+### Postconditions
 
 A **postcondition** is a predicate that must be true just *after* to the
 execution of the function. For example, the absolute value of a number is
@@ -100,7 +102,7 @@ def absolute_value(value):
 Postconditions must be defined inside the `finally` clause. The body of the
 function must go inside the `try` statement.
 
-## The `old` object
+### The `old` object
 
 This object is void on *first* function call.
 
@@ -139,7 +141,7 @@ Traceback (most recent call last):
 AssertionError
 ```
 
-## Class Invariants
+### Class Invariants
 
 A **class invariant** is a constraint imposed on all *public methods* of the
 class. Public method are those that not starts with undersocre (`_`). For
@@ -175,12 +177,12 @@ AssertionError
 The constraints are checked *after* object initialization, and *after* a method
 is called.
 
-## Inheritance
+### Inheritance
 
 Since `eiffel.Class` is a normal python class, you can handle inheritance as
 usual.
 
-## Overriding `__setattr__` and `__delattr__`
+### Overriding `__setattr__` and `__delattr__`
 
 if you want to override the `__setattr__` or `__delattr__` method of the
 `eiffel.Class` subclasses, you should use `eiffel.__setattr__` and
