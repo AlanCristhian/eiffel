@@ -165,7 +165,7 @@ class _Old:
                             return self.namespace[function_id][attr_name]
                 if "'_Old' object has no attribute '" in error.args[0]:
                     raise ValueError(
-                        r"'old' has no attributes. Wrap your postconditions " \
+                        r"'old' has no attributes. Wrap your postconditions "
                         r"inside an 'if eiffel.old:' statement.")
             finally:
                 del function_frame
