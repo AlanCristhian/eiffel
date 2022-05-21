@@ -193,17 +193,27 @@ if you want to override the `__setattr__` or `__delattr__` method of the
 ```python
 import eiffel
 
-class LogDeleted(eiffel.Class):
+class LogEvents(eiffel.Class):
     def __init__(self):
         self.value = "value"
 
     def __delattr__(self, name):
+
+        # METHOD 1: using the eiffel.__delattr__() function
         eiffel.__delattr__(self, name)
         print(f"'{name}' attribute has been deleted")
+
+    def __setattr__(self, name, attr):
+
+        # METHOD 2: using the super() function
+        super().__setattr__(self, name, attr)
+        print(f"'{name}' attribute has been changed")
 ```
 
 ```
->>> obj = LogDeleted()
+>>> obj = LogEvents()
+>>> obj.value = "new value"
+'value' attribute has been changed
 >>> del obj.value
 'value' attribute has been deleted
 ```
