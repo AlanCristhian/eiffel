@@ -219,4 +219,4 @@ class LogEvents(eiffel.Class):
 ```
 
 If you don't use those functions, the class will loose the hability to check
-constrains defined on the ´´__invariant__´´ method.
+constrains defined on the ``__invariant__`` method.
