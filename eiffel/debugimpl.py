@@ -1,4 +1,4 @@
-"""A Python Design By Contract module."""
+"""Debug mode implementation"""
 
 import functools
 import sys
@@ -7,12 +7,10 @@ from typing import Callable, Any, Optional, Dict, Tuple
 
 
 __all__ = ["Class", "__setattr__", "__delattr__", "routine", "require", "old"]
-__version__ = "0.3.3"
+
 
 TKwArgs = Dict[str, Any]
 TArgs = Tuple[Any]
-SetAttrType = Callable[[Any, str, Any], None]
-DelAttrType = Callable[[Any, str], None]
 
 
 # Class Invariant
@@ -48,55 +46,49 @@ def _constraint_checker(
 # I define __setattr__ and __delattr__ here
 # because they will be part of the public API.
 
-if __debug__:
-    def __setattr__(self: Any, name: str, value: Any) -> None:
-        """Assigns the value to the attribute, then
-        check that the invariant are maintaned."""
 
-        object.__setattr__(self, name, value)
-        if self._invariant_enabled:
-            self.__invariant__()
+def __setattr__(self: Any, name: str, value: Any) -> None:
+    """Assigns the value to the attribute, then
+    check that the invariant are maintaned."""
 
-    def __delattr__(self: Any, name: str) -> None:
-        """Delete the attribute, then check
-        that the invariant are maintaned."""
+    object.__setattr__(self, name, value)
+    if self._invariant_enabled:
+        self.__invariant__()
 
-        object.__delattr__(self, name)
-        if self._invariant_enabled:
-            self.__invariant__()
-else:
-    __setattr__: SetAttrType = object.__setattr__  # type: ignore[no-redef]
-    __delattr__: DelAttrType = object.__delattr__  # type: ignore[no-redef]
+
+def __delattr__(self: Any, name: str) -> None:
+    """Delete the attribute, then check
+    that the invariant are maintaned."""
+
+    object.__delattr__(self, name)
+    if self._invariant_enabled:
+        self.__invariant__()
 
 
 class Class:
     """Make a class that can define invariants."""
 
-    if __debug__:
-        _invariant_enabled = True
+    _invariant_enabled = True
 
-        # Override defaults methods with the new ones.
-        __delattr__ = __delattr__
-        __setattr__ = __setattr__
+    # Override defaults methods with the new ones.
+    __delattr__ = __delattr__
+    __setattr__ = __setattr__
 
-        def __invariant__(self) -> None:
-            pass
+    def __invariant__(self) -> None:
+        pass
 
-        def __init_subclas__(cls) -> None:
-            base_vars = vars(cls.__base__)  # type: ignore[attr-defined]
-            for name, member in vars(cls).items():
-                if name not in base_vars \
-                and callable(member) \
-                and not name.startswith("_"):  # noqa
-                    setattr(cls, name, _constraint_checker(member))
-            super().__init_subclass__()
+    def __init_subclas__(cls) -> None:
+        base_vars = vars(cls.__base__)  # type: ignore[attr-defined]
+        for name, member in vars(cls).items():
+            if name not in base_vars \
+            and callable(member) \
+            and not name.startswith("_"):  # noqa
+                setattr(cls, name, _constraint_checker(member))
+        super().__init_subclass__()
 
 
 def routine(function: Callable[..., Any]) -> Callable[..., Any]:
     """A decorator that register the result of the function."""
-
-    if not __debug__:
-        return function
 
     # NOTE 1: this object will be  filled by get_old function.
     __old__: list[TKwArgs] = [{}]
@@ -125,9 +117,6 @@ class _Old:
 
     def __bool__(self) -> bool:
         """Lookup the local namespace of the last function call."""
-        if not __debug__:
-            return False
-
         try:
             # function_frame is the namespace of the decorated function.
             function_frame: Optional[types.FrameType] = sys._getframe(1)
