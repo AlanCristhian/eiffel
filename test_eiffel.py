@@ -14,7 +14,7 @@ global_variable = 0
 # ============================
 
 
-@unittest.skipUnless(__debug__, "Assertions ar performed in debug mode only.")
+@unittest.skipUnless(__debug__, "Assertions are performed in debug mode only.")
 class ClassCaseDebug(unittest.TestCase):
     def test_check_invariants_after_initialization(self):
 
@@ -83,7 +83,7 @@ class ClassCaseDebug(unittest.TestCase):
         self.assertEqual(Object._invariant_enabled, True)
 
 
-@unittest.skipUnless(__debug__, "Assertions ar performed in debug mode only.")
+@unittest.skipUnless(__debug__, "Assertions are performed in debug mode only.")
 class ContextManagersCaseDebug(unittest.TestCase):
 
     def test_body(self):
@@ -118,7 +118,7 @@ class ContextManagersCaseDebug(unittest.TestCase):
             absolute_value(-5)
 
 
-@unittest.skipUnless(__debug__, "Assertions ar performed in debug mode only.")
+@unittest.skipUnless(__debug__, "Assertions are performed in debug mode only.")
 class OldObjectCaseDebug(unittest.TestCase):
     def test_old_without_check_if_is_defined(self):
 
@@ -301,7 +301,6 @@ class __setattr__and__delattr__CaseDebug(unittest.TestCase):
         my_object.__invariant__ = mock.Mock()
         del my_object.attr
         my_object.__invariant__.assert_called()
-
 
 
 # Test performed on optimized mode
