@@ -7,7 +7,7 @@ from typing import Callable, Any, Optional, Dict, Tuple
 
 
 __all__ = ["Class", "__setattr__", "__delattr__", "routine", "require", "old"]
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 
 TKwArgs = Dict[str, Any]
 TArgs = Tuple[Any]
