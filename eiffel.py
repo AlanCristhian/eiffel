@@ -121,7 +121,7 @@ require = _Require()
 
 
 class _Old:
-    namespace: Dict[Tuple[str, int], TKwArgs] = {}
+    namespace: Dict[int, TKwArgs] = {}
 
     def __bool__(self) -> bool:
         """Lookup the local namespace of the last function call."""
