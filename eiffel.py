@@ -133,10 +133,7 @@ class _Old:
             function_frame: Optional[types.FrameType] = sys._getframe(1)
 
             if function_frame is not None:
-                function_id = (
-                    function_frame.f_code.co_filename,
-                    function_frame.f_code.co_firstlineno
-                )
+                function_id = id(function_frame)
 
                 # wrapper_locals is the namespace of the decorator.
                 wrapper_locals = function_frame\
@@ -167,10 +164,7 @@ class _Old:
             try:
                 function_frame: Optional[types.FrameType] = sys._getframe(1)
                 if function_frame is not None:
-                    function_id = (
-                        function_frame.f_code.co_filename,
-                        function_frame.f_code.co_firstlineno
-                    )
+                    function_id = id(function_frame)
                     if function_id in self.namespace:
                         if attr_name in self.namespace[function_id]:
                             return self.namespace[function_id][attr_name]
