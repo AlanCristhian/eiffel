@@ -131,38 +131,36 @@ class _Old:
         # function_frame is the namespace of the decorated function.
         function_frame: Optional[types.FrameType] = sys._getframe(1)
 
-        if function_frame is not None:
+        if function_frame:
 
             # wrapper_locals is the namespace of the decorator.
             wrapper_locals = function_frame\
                 .f_back.f_locals  # type: ignore[union-attr]
 
             # __old__ is the one indicated in NOTE 1
-            if "__old__" not in wrapper_locals:
+            old_locals = wrapper_locals.get("__old__")
+            if old_locals is None:
                 function_name = function_frame.f_code.co_name
                 raise ValueError(
                     f"'{function_name}' function is not decorated"
                     " with 'eiffel.routine' decorator.")
 
-            locals_ = wrapper_locals["__old__"].pop()
-            wrapper_locals["__old__"].append(function_frame.f_locals)
+            locals_, old_locals[0] = old_locals[0], function_frame.f_locals
             if locals_:
                 self.namespace[id(function_frame)] = locals_
                 return True
 
         return False
 
-
     def __getattribute__(self, attr_name: str) -> Any:
         try:
             return super().__getattribute__(attr_name)
         except AttributeError as error:
             function_frame: Optional[types.FrameType] = sys._getframe(1)
-            if function_frame is not None:
-                function_id = id(function_frame)
-                if function_id in self.namespace:
-                    if attr_name in self.namespace[function_id]:
-                        return self.namespace[function_id][attr_name]
+            if function_frame:
+                function_locals = self.namespace.get(id(function_frame))
+                if function_locals and attr_name in function_locals:
+                    return function_locals[attr_name]
             if "'_Old' object has no attribute '" in error.args[0]:
                 raise ValueError(
                     r"'old' has no attributes. Wrap your postconditions "
