@@ -128,52 +128,46 @@ class _Old:
         if not __debug__:
             return False
 
-        try:
-            # function_frame is the namespace of the decorated function.
-            function_frame: Optional[types.FrameType] = sys._getframe(1)
+        # function_frame is the namespace of the decorated function.
+        function_frame: Optional[types.FrameType] = sys._getframe(1)
 
-            if function_frame is not None:
-                function_id = id(function_frame)
+        if function_frame is not None:
+            function_id = id(function_frame)
 
-                # wrapper_locals is the namespace of the decorator.
-                wrapper_locals = function_frame\
-                    .f_back.f_locals  # type: ignore[union-attr]
+            # wrapper_locals is the namespace of the decorator.
+            wrapper_locals = function_frame\
+                .f_back.f_locals  # type: ignore[union-attr]
 
-                # __old__ is the one indicated in NOTE 1
-                if "__old__" not in wrapper_locals:
-                    function_name = function_frame.f_code.co_name
-                    raise ValueError(
-                        f"'{function_name}' function is not decorated"
-                        " with 'eiffel.routine' decorator.")
+            # __old__ is the one indicated in NOTE 1
+            if "__old__" not in wrapper_locals:
+                function_name = function_frame.f_code.co_name
+                raise ValueError(
+                    f"'{function_name}' function is not decorated"
+                    " with 'eiffel.routine' decorator.")
 
-                locals_ = wrapper_locals["__old__"].pop()
-                wrapper_locals["__old__"].append(function_frame.f_locals)
-                if locals_:
-                    self.namespace[function_id] = locals_
-                    return True
+            locals_ = wrapper_locals["__old__"].pop()
+            wrapper_locals["__old__"].append(function_frame.f_locals)
+            if locals_:
+                self.namespace[function_id] = locals_
+                return True
 
-            return False
-        finally:
-            del wrapper_locals
-            del function_frame
+        return False
+
 
     def __getattribute__(self, attr_name: str) -> Any:
         try:
             return super().__getattribute__(attr_name)
         except AttributeError as error:
-            try:
-                function_frame: Optional[types.FrameType] = sys._getframe(1)
-                if function_frame is not None:
-                    function_id = id(function_frame)
-                    if function_id in self.namespace:
-                        if attr_name in self.namespace[function_id]:
-                            return self.namespace[function_id][attr_name]
-                if "'_Old' object has no attribute '" in error.args[0]:
-                    raise ValueError(
-                        r"'old' has no attributes. Wrap your postconditions "
-                        r"inside an 'if eiffel.old:' statement.")
-            finally:
-                del function_frame
+            function_frame: Optional[types.FrameType] = sys._getframe(1)
+            if function_frame is not None:
+                function_id = id(function_frame)
+                if function_id in self.namespace:
+                    if attr_name in self.namespace[function_id]:
+                        return self.namespace[function_id][attr_name]
+            if "'_Old' object has no attribute '" in error.args[0]:
+                raise ValueError(
+                    r"'old' has no attributes. Wrap your postconditions "
+                    r"inside an 'if eiffel.old:' statement.")
 
 
 old = _Old()
