@@ -132,7 +132,6 @@ class _Old:
         function_frame: Optional[types.FrameType] = sys._getframe(1)
 
         if function_frame is not None:
-            function_id = id(function_frame)
 
             # wrapper_locals is the namespace of the decorator.
             wrapper_locals = function_frame\
@@ -148,7 +147,7 @@ class _Old:
             locals_ = wrapper_locals["__old__"].pop()
             wrapper_locals["__old__"].append(function_frame.f_locals)
             if locals_:
-                self.namespace[function_id] = locals_
+                self.namespace[id(function_frame)] = locals_
                 return True
 
         return False
