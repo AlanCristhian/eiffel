@@ -152,19 +152,15 @@ class _Old:
 
         return False
 
-    def __getattribute__(self, attr_name: str) -> Any:
-        try:
-            return super().__getattribute__(attr_name)
-        except AttributeError as error:
-            function_frame: Optional[types.FrameType] = sys._getframe(1)
-            if function_frame:
-                function_locals = self.namespace.get(id(function_frame))
-                if function_locals and attr_name in function_locals:
-                    return function_locals[attr_name]
-            if "'_Old' object has no attribute '" in error.args[0]:
-                raise ValueError(
-                    r"'old' has no attributes. Wrap your postconditions "
-                    r"inside an 'if eiffel.old:' statement.")
+    def __getattr__(self, name: str) -> Any:
+        function_frame: Optional[types.FrameType] = sys._getframe(1)
+        if function_frame:
+            function_locals = self.namespace.get(id(function_frame))
+            if function_locals and name in function_locals:
+                return function_locals[name]
+        raise ValueError(
+            r"'old' has no attributes. Wrap your postconditions "
+            r"inside an 'if eiffel.old:' statement.")
 
 
 old = _Old()
