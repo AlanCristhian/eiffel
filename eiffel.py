@@ -82,7 +82,7 @@ class Class:
         def __invariant__(self) -> None:
             pass
 
-        def __init_subclas__(cls) -> None:
+        def __init_subclass__(cls) -> None:
             base_vars = vars(cls.__base__)  # type: ignore[attr-defined]
             for name, member in vars(cls).items():
                 if name not in base_vars \
